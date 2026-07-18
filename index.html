@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gas Learning Lab TH</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar" aria-label="หัวเว็บแอป">
+        <div class="brand-block">
+          <p class="eyebrow">ห้องทดลองแก๊สสำหรับ ม.ปลาย / ปี 1</p>
+          <h1>Gas Learning Lab TH</h1>
+        </div>
+        <div class="top-actions">
+          <button id="toggleRun" class="primary-button" type="button" title="เริ่มหรือหยุด Simulation">
+            <span id="toggleIcon" aria-hidden="true">▶</span>
+            <span id="toggleText">เริ่ม</span>
+          </button>
+          <button id="resetSim" class="icon-button" type="button" title="รีเซ็ตอนุภาค" aria-label="รีเซ็ตอนุภาค">↻</button>
+          <button id="recordData" class="secondary-button" type="button" title="บันทึกข้อมูลลง Data Lab">บันทึกผล</button>
+          <button id="exportCsv" class="secondary-button" type="button" title="Export CSV">CSV</button>
+        </div>
+      </header>
+
+      <section class="macro-strip" aria-label="ค่ามาโครจากสมการแก๊สอุดมคติ">
+        <article class="macro-card pressure-card">
+          <span>P pressure</span>
+          <strong id="macroP">1.00 atm</strong>
+          <small id="macroPKpa">101.3 kPa</small>
+        </article>
+        <article class="macro-card volume-card">
+          <span>V volume</span>
+          <strong id="macroV">24.47 L</strong>
+          <small id="macroVMl">24470 mL</small>
+        </article>
+        <article class="macro-card temperature-card">
+          <span>T temperature</span>
+          <strong id="macroT">298.15 K</strong>
+          <small id="macroTC">25.0 °C</small>
+        </article>
+        <article class="macro-card amount-card">
+          <span>n amount</span>
+          <strong id="macroN">1.000 mol</strong>
+          <small id="macroMolesNote">จากแก๊สผสม</small>
+        </article>
+      </section>
+
+      <section class="workspace" aria-label="Simulation Lab และ controls">
+        <section class="simulation-panel" aria-label="Simulation Lab">
+          <div class="panel-heading sim-heading">
+            <div>
+              <h2>Simulation Lab</h2>
+              <p id="runState">หยุดอยู่ - พร้อมทำนายก่อนทดลอง</p>
+            </div>
+            <div class="mode-switch" role="tablist" aria-label="เลือกภาพจำลอง">
+              <button class="chip-button active" id="viewParticles" type="button">อนุภาค</button>
+              <button class="chip-button" id="viewGraham" type="button">Graham</button>
+            </div>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="simCanvas" aria-label="ภาชนะและอนุภาคแก๊สแบบ real-time"></canvas>
+            <div class="canvas-overlay" aria-label="สรุปความสัมพันธ์">
+              <span id="lawBadge">PV = nRT</span>
+              <span id="relationSummary">ตั้งค่า P, V, T, n แล้วดูอนุภาคกับค่ามาโครพร้อมกัน</span>
+            </div>
+          </div>
+        </section>
+
+        <aside class="control-panel" aria-label="แผงควบคุม">
+          <section class="control-block">
+            <div class="control-title">
+              <h2>สภาวะเดี่ยว (State)</h2>
+              <button id="presetRoomAir" class="small-button" type="button">อากาศห้อง</button>
+            </div>
+
+            <label class="select-row" for="solveFor">
+              <span>คำนวณตัวแปร</span>
+              <select id="solveFor">
+                <option value="P">P จาก V,T,n</option>
+                <option value="V">V จาก P,T,n</option>
+                <option value="T">T จาก P,V,n</option>
+                <option value="n">n จาก P,V,T</option>
+              </select>
+            </label>
+
+            <div class="state-grid">
+              <label class="input-card pressure-input" for="pressureInput">
+                <span>P</span>
+                <input id="pressureInput" type="number" min="0.001" step="0.01" value="1.00">
+                <select id="pressureUnit" aria-label="หน่วยความดัน">
+                  <option value="atm">atm</option>
+                  <option value="kPa">kPa</option>
+                </select>
+              </label>
+              <label class="input-card volume-input" for="volumeInput">
+                <span>V</span>
+                <input id="volumeInput" type="number" min="0.001" step="0.1" value="24.47">
+                <select id="volumeUnit" aria-label="หน่วยปริมาตร">
+                  <option value="L">L</option>
+                  <option value="mL">mL</option>
+                </select>
+              </label>
+              <label class="input-card temperature-input" for="temperatureInput">
+                <span>T</span>
+                <input id="temperatureInput" type="number" min="-273.14" step="1" value="298.15">
+                <select id="temperatureUnit" aria-label="หน่วยอุณหภูมิ">
+                  <option value="K">K</option>
+                  <option value="C">°C</option>
+                </select>
+              </label>
+              <label class="input-card amount-input" for="amountInput">
+                <span>n</span>
+                <input id="amountInput" type="number" min="0.0001" step="0.01" value="1.00">
+                <small>mol</small>
+              </label>
+            </div>
+
+            <div id="misconceptionBox" class="feedback-box" aria-live="polite">
+              ใช้อุณหภูมิแบบ Kelvin (K) ในการคำนวณกฎของแก๊สเสมอ
+            </div>
+          </section>
+
+          <section class="control-block">
+            <div class="control-title">
+              <h2>เปลี่ยนสภาวะ (Gas Laws)</h2>
+            </div>
+            <label class="select-row" for="lawSelect">
+              <span>โหมดกฎของแก๊ส</span>
+              <select id="lawSelect">
+                <option value="boyle">Boyle: T,n คงที่</option>
+                <option value="charles">Charles: P,n คงที่</option>
+                <option value="gay-lussac">Gay-Lussac: V,n คงที่</option>
+                <option value="avogadro">Avogadro: P,T คงที่</option>
+                <option value="combined">Combined: n คงที่</option>
+              </select>
+            </label>
+
+            <div class="lock-row" aria-label="ล็อกตัวแปร">
+              <label><input id="lockP" type="checkbox"> P</label>
+              <label><input id="lockV" type="checkbox"> V</label>
+              <label><input id="lockT" type="checkbox"> T</label>
+              <label><input id="lockN" type="checkbox"> n</label>
+            </div>
+
+            <div class="after-grid">
+              <label for="afterPressure">P₂</label>
+              <input id="afterPressure" type="number" min="0.001" step="0.01" value="1">
+              <label for="afterVolume">V₂</label>
+              <input id="afterVolume" type="number" min="0.001" step="0.1" value="12.24">
+              <label for="afterTemperature">T₂ (K)</label>
+              <input id="afterTemperature" type="number" min="0.01" step="1" value="350">
+              <label for="afterAmount">n₂</label>
+              <input id="afterAmount" type="number" min="0.0001" step="0.01" value="1">
+            </div>
+
+            <div class="button-row">
+              <button id="calculateAfter" class="secondary-button" type="button">ทดลอง after</button>
+              <button id="applyAfter" class="secondary-button" type="button">ใช้ค่า after</button>
+            </div>
+            <div id="afterSummary" class="result-box">ยังไม่ได้ทดลอง after state</div>
+          </section>
+
+          <section class="control-block">
+            <div class="control-title">
+              <h2>แก๊สผสม (Mixture)</h2>
+            </div>
+            <div class="mixture-editor">
+              <select id="gasSelect" aria-label="เลือกชนิดแก๊ส"></select>
+              <input id="gasMolesInput" type="number" min="0" step="0.01" value="0.21" aria-label="จำนวนโมลของแก๊ส">
+              <button id="setGasMoles" class="small-button" type="button">ตั้งค่า</button>
+            </div>
+            <div id="mixtureBars" class="mixture-bars" aria-label="สัดส่วนแก๊สในภาชนะ"></div>
+            <div class="mini-table-wrap">
+              <table class="mini-table">
+                <thead>
+                  <tr>
+                    <th>แก๊ส</th>
+                    <th>mol</th>
+                    <th>x</th>
+                    <th>Pᵢ</th>
+                  </tr>
+                </thead>
+                <tbody id="mixtureTable"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="control-block">
+            <div class="control-title">
+              <h2>Graham's Law</h2>
+            </div>
+            <div class="graham-grid">
+              <label for="grahamGasA">แก๊ส 1</label>
+              <select id="grahamGasA"></select>
+              <label for="grahamGasB">แก๊ส 2</label>
+              <select id="grahamGasB"></select>
+              <label for="grahamDistance">ระยะ/ปริมาตร</label>
+              <input id="grahamDistance" type="number" min="1" step="10" value="120">
+            </div>
+            <div class="button-row">
+              <button id="runGraham" class="secondary-button" type="button">จำลองการรั่ว</button>
+              <button id="unknownGas" class="secondary-button" type="button">โจทย์แก๊สไม่ทราบชนิด</button>
+            </div>
+            <div id="grahamSummary" class="result-box">rate₁/rate₂ = sqrt(M₂/M₁)</div>
+          </section>
+
+          <section class="control-block">
+            <div class="control-title">
+              <h2>Scenario Mode</h2>
+            </div>
+            <div id="scenarioButtons" class="scenario-grid"></div>
+          </section>
+        </aside>
+      </section>
+
+      <section class="bottom-lab" aria-label="Data Graph Challenge Teacher">
+        <div class="bottom-tabs" role="tablist">
+          <button class="bottom-tab active" data-panel="dataPanel" type="button">Data Lab</button>
+          <button class="bottom-tab" data-panel="graphPanel" type="button">Graph Lab</button>
+          <button class="bottom-tab" data-panel="challengePanel" type="button">Challenge Mode</button>
+          <button class="bottom-tab" data-panel="teacherPanel" type="button">Teacher Mode</button>
+        </div>
+
+        <section id="dataPanel" class="lab-panel active" aria-label="Data Lab">
+          <div class="section-heading">
+            <div>
+              <h2>Data Lab</h2>
+              <p>บันทึก P,V,T,n, mole fraction, partial pressure และ rate จากการทดลอง</p>
+            </div>
+            <button id="clearData" class="small-button" type="button">ล้างตาราง</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>โหมด</th>
+                  <th>P</th>
+                  <th>V</th>
+                  <th>T</th>
+                  <th>n</th>
+                  <th>mole fraction</th>
+                  <th>partial pressure</th>
+                  <th>rate</th>
+                </tr>
+              </thead>
+              <tbody id="dataLog">
+                <tr class="empty-row"><td colspan="9">ยังไม่มีข้อมูล</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="graphPanel" class="lab-panel" aria-label="Graph Lab">
+          <div class="section-heading">
+            <div>
+              <h2>Graph Lab</h2>
+              <p id="graphSummary">เลือกกราฟเพื่อดูความสัมพันธ์และจุดข้อมูลทดลอง</p>
+            </div>
+            <label class="compact-select" for="graphType">
+              <span>กราฟ</span>
+              <select id="graphType">
+                <option value="PV">P-V</option>
+                <option value="VT">V-T</option>
+                <option value="PT">P-T</option>
+                <option value="mixture">Dalton</option>
+                <option value="graham">Graham</option>
+              </select>
+            </label>
+          </div>
+          <canvas id="graphCanvas" aria-label="กราฟจากข้อมูลทดลอง"></canvas>
+        </section>
+
+        <section id="challengePanel" class="lab-panel" aria-label="Challenge Mode">
+          <div class="section-heading">
+            <div>
+              <h2>Challenge Mode</h2>
+              <p>ทำตามลำดับ ทำนาย → ทดลอง → อธิบายผล</p>
+            </div>
+            <label class="compact-select" for="challengeSelect">
+              <span>ภารกิจ</span>
+              <select id="challengeSelect"></select>
+            </label>
+          </div>
+          <div class="challenge-grid">
+            <article class="challenge-card">
+              <h3 id="challengeTitle">ภารกิจ</h3>
+              <p id="challengePrompt">เลือกภารกิจเพื่อเริ่ม</p>
+              <button id="loadChallenge" class="secondary-button" type="button">โหลดภารกิจ</button>
+            </article>
+            <label class="writing-box" for="predictionInput">
+              <span>ทำนายก่อนทดลอง (Prediction)</span>
+              <textarea id="predictionInput" rows="5" placeholder="เขียนค่าที่คาดว่าจะเพิ่ม/ลด และเหตุผล"></textarea>
+            </label>
+            <label class="writing-box" for="explanationInput">
+              <span>อธิบายหลังทดลอง (Explanation)</span>
+              <textarea id="explanationInput" rows="5" placeholder="ใช้ข้อมูล ตาราง หรือกราฟอธิบายผล"></textarea>
+            </label>
+          </div>
+          <div class="button-row">
+            <button id="checkChallenge" class="primary-button" type="button">ตรวจ feedback</button>
+            <button id="recordChallenge" class="secondary-button" type="button">บันทึกเป็นหลักฐาน</button>
+          </div>
+          <div id="challengeFeedback" class="feedback-box">ระบบจะจับ misconception เช่น ใช้ °C แทน K, ลืมล็อกตัวแปร, สับสน P รวมกับ Pᵢ</div>
+        </section>
+
+        <section id="teacherPanel" class="lab-panel" aria-label="Teacher Mode">
+          <div class="section-heading">
+            <div>
+              <h2>Teacher Mode</h2>
+              <p>ตั้ง preset, lock ตัวแปร, เปิด/ปิดเฉลย และสร้างใบงานสั้น ๆ</p>
+            </div>
+            <label class="switch-row" for="showAnswers">
+              <span>เปิดเฉลย</span>
+              <input id="showAnswers" type="checkbox">
+            </label>
+          </div>
+          <div class="teacher-grid">
+            <label class="select-row" for="teacherPreset">
+              <span>Preset ครู</span>
+              <select id="teacherPreset"></select>
+            </label>
+            <div class="teacher-locks">
+              <label><input class="teacher-lock" value="P" type="checkbox"> ล็อก P</label>
+              <label><input class="teacher-lock" value="V" type="checkbox"> ล็อก V</label>
+              <label><input class="teacher-lock" value="T" type="checkbox"> ล็อก T</label>
+              <label><input class="teacher-lock" value="n" type="checkbox"> ล็อก n</label>
+            </div>
+            <div class="button-row">
+              <button id="applyTeacherPreset" class="secondary-button" type="button">ใช้ preset</button>
+              <button id="makeWorksheet" class="secondary-button" type="button">สร้างใบงาน</button>
+            </div>
+            <label class="writing-box worksheet-box" for="worksheetOutput">
+              <span>ใบงานสั้นสำหรับคาบเรียน</span>
+              <textarea id="worksheetOutput" rows="9" readonly></textarea>
+            </label>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
